@@ -1,2 +1,2 @@
-This is a Gesture control program Which alow you to control cursor with just moving you hand(index finger) and  made also added some other features too like click , minizing all windo at once, opening all winodow at once and etc. 
+This is a Gesture control program Which alow you to control cursor with just moving you hand(index finger) and we have also added some other features like click(to open an application) , minizing all window at once, opening all winodow at once and etc. 
 This is made using python . Currenlt making it more refine(reducing lag) and tring to add more gesture to make it more useful.
