@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesture Guide – GestureWave AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <span class="logo-wave">⚡</span>
+            <span class="logo-text">GestureWave <em>AI</em></span>
+        </div>
+        <nav>
+            <a href="/" class="nav-link">Live Demo</a>
+            <a href="/gesture_map" class="nav-link active">Gesture Guide</a>
+        </nav>
+    </header>
+
+    <div class="guide-hero">
+        <h1>Gesture Reference Guide</h1>
+        <p>All supported hand gestures and their mapped system actions</p>
+    </div>
+
+    <div class="gesture-grid-page">
+        {% for g in gestures %}
+        <div class="gesture-tile">
+            <div class="tile-icon">{{ g.icon }}</div>
+            <div class="tile-name">{{ g.gesture }}</div>
+            <div class="tile-fingers">{{ g.fingers }}</div>
+            <div class="tile-action">→ {{ g.action }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="guide-tips">
+        <h2>📌 Usage Tips</h2>
+        <ul>
+            <li>Ensure your hand is clearly visible in good lighting</li>
+            <li>Keep your hand 30–80 cm from the webcam for best accuracy</li>
+            <li>Hold gestures for ~0.5 seconds for reliable detection</li>
+            <li>Use a plain background for improved detection performance</li>
+            <li>Only one hand is tracked at a time; use your dominant hand</li>
+        </ul>
+    </div>
+
+    <footer class="footer">
+        <p>GestureWave AI &nbsp;|&nbsp; Touch-Free Gesture Control &nbsp;|&nbsp; GLA University 2025–26</p>
+    </footer>
+</body>
+</html>

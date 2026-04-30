@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestureWave AI – Touch-Free Gesture Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ── Header ── -->
+    <header class="header">
+        <div class="logo">
+            <span class="logo-wave">⚡</span>
+            <span class="logo-text">GestureWave <em>AI</em></span>
+        </div>
+        <nav>
+            <a href="/" class="nav-link active">Live Demo</a>
+            <a href="/gesture_map" class="nav-link">Gesture Guide</a>
+        </nav>
+        <div class="status-pill" id="statusPill">
+            <span class="status-dot"></span>
+            <span id="statusText">Initializing…</span>
+        </div>
+    </header>
+
+    <!-- ── Hero / Main Layout ── -->
+    <main class="main-grid">
+
+        <!-- Camera Feed -->
+        <section class="camera-section">
+            <div class="camera-frame">
+                <div class="corner tl"></div><div class="corner tr"></div>
+                <div class="corner bl"></div><div class="corner br"></div>
+                <img src="{{ url_for('video_feed') }}" id="videoFeed" alt="Camera Feed">
+                <div class="cam-overlay" id="camOverlay">
+                    <p>📷 Camera Loading…</p>
+                </div>
+            </div>
+            <div class="cam-controls">
+                <button class="btn btn-stop" onclick="stopCamera()">⏹ Stop Camera</button>
+                <button class="btn btn-refresh" onclick="refreshFeed()">🔄 Refresh Feed</button>
+                <a href="/gesture_map" class="btn btn-guide">📋 Gesture Guide</a>
+            </div>
+        </section>
+
+        <!-- Info Panel -->
+        <aside class="info-panel">
+
+            <!-- Live Gesture Card -->
+            <div class="card gesture-card">
+                <div class="card-header">🤚 Live Detection</div>
+                <div class="gesture-display" id="gestureDisplay">
+                    <div class="gesture-icon" id="gestureIcon">✋</div>
+                    <div class="gesture-name" id="gestureName">Waiting…</div>
+                    <div class="gesture-action" id="gestureAction">–</div>
+                </div>
+                <div class="confidence-row">
+                    <span>Confidence</span>
+                    <div class="conf-bar">
+                        <div class="conf-fill" id="confFill" style="width:0%"></div>
+                    </div>
+                    <span id="confValue">0%</span>
+                </div>
+            </div>
+
+            <!-- Stats Card -->
+            <div class="card stats-card">
+                <div class="card-header">📊 System Stats</div>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <div class="stat-val" id="fpsVal">–</div>
+                        <div class="stat-lbl">FPS</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-val" id="handVal">–</div>
+                        <div class="stat-lbl">Hand</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-val" id="totalVal">0</div>
+                        <div class="stat-lbl">Gestures</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Log -->
+            <div class="card log-card">
+                <div class="card-header">⚡ Action Log
+                    <button class="clear-btn" onclick="clearLog()">Clear</button>
+                </div>
+                <ul class="action-log" id="actionLog">
+                    <li class="log-empty">Waiting for gestures…</li>
+                </ul>
+            </div>
+
+            <!-- Quick Gestures Reference -->
+            <div class="card quick-card">
+                <div class="card-header">💡 Quick Reference</div>
+                <div class="quick-list">
+                    <div class="quick-item"><span>✋ Open Palm</span><span>Play/Pause</span></div>
+                    <div class="quick-item"><span>☝️ Point</span><span>Move Cursor</span></div>
+                    <div class="quick-item"><span>🤏 Pinch</span><span>Click</span></div>
+                    <div class="quick-item"><span>👍 Thumb Up</span><span>Volume Up</span></div>
+                    <div class="quick-item"><span>✌️ Peace</span><span>Screenshot</span></div>
+                    <div class="quick-item"><span>🤘 Rock</span><span>Scroll Down</span></div>
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- ── Footer ── -->
+    <footer class="footer">
+        <p>GestureWave AI &nbsp;|&nbsp; Touch-Free Gesture Control Using AI Hand Tracking &nbsp;|&nbsp;
+           Built with MediaPipe &amp; OpenCV &nbsp;|&nbsp; GLA University, Mathura 2025–26</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
