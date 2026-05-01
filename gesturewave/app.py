@@ -42,6 +42,10 @@ gesture_state = {
 pyautogui.FAILSAFE = False
 pyautogui.PAUSE = 0.01
 
+# ─── Pinch Hold State ─────────────────────────────────────────────────────────
+_pinch_held = False          # True while mouse button is being held down
+_pinch_start_time = None     # When pinch gesture first started
+
 # ─── Gesture Recognition Logic ────────────────────────────────────────────────
 
 def get_finger_states(landmarks):
@@ -91,21 +95,21 @@ def recognize_gesture(landmarks, frame_shape):
     if not thumb and not index and not middle and not ring and not pinky:
         return "Fist", "No Action"
 
-    # Peace / Victory Sign: index + middle up
+    # Peace / Victory Sign: index + middle up → Scroll Up
     if not thumb and index and middle and not ring and not pinky:
-        return "Peace Sign", "Screenshot"
+        return "Peace Sign", "Scroll Up"
 
     # Pointing: only index up
     if not thumb and index and not middle and not ring and not pinky:
         return "Pointing", "Move Cursor"
 
-    # Pinch: index + thumb close
+    # Pinch: index + thumb close → Click / Click & Hold
     if pinch_dist < 0.05:
-        return "Pinch", "Click"
+        return "Pinch", "Pinch Action"
 
-    # Swipe Right: index + middle + ring up (spread)
+    # Three fingers: index + middle + ring up → Scroll Down
     if not thumb and index and middle and ring and not pinky:
-        return "Three Fingers", "Next Slide"
+        return "Three Fingers", "Scroll Down"
 
     # All four fingers (no thumb)
     if not thumb and index and middle and ring and pinky:
@@ -148,9 +152,12 @@ def process_frame(frame):
             # Perform system action
             perform_action(action, hand_landmarks.landmark, w, h)
 
-            # Update state
+            # Update state — show friendly label for pinch hold state
+            display_action = action
+            if action == "Pinch Action":
+                display_action = "Click & Hold" if _pinch_held else "Click"
             gesture_state["current_gesture"] = gesture
-            gesture_state["action_performed"] = action
+            gesture_state["action_performed"] = display_action
             gesture_state["hand_detected"] = True
             gesture_state["confidence"] = 0.95
 
@@ -159,10 +166,11 @@ def process_frame(frame):
             cv2.rectangle(frame, (10, 10), (400, 80), (0, 200, 100), 2)
             cv2.putText(frame, f"Gesture: {gesture}", (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 150), 2)
-            cv2.putText(frame, f"Action : {action}", (20, 68),
+            cv2.putText(frame, f"Action : {display_action}", (20, 68),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 220, 0), 2)
 
     else:
+        release_pinch_if_held()  # Safety: release mouse if hand disappears mid-hold
         gesture_state["current_gesture"] = "None"
         gesture_state["action_performed"] = "No hand detected"
         gesture_state["hand_detected"] = False
@@ -182,35 +190,56 @@ def process_frame(frame):
 _last_action_time = {}
 _cursor_smooth = [960, 540]
 
+def release_pinch_if_held():
+    """Safely release mouse button if a pinch-hold is active."""
+    global _pinch_held, _pinch_start_time
+    if _pinch_held:
+        pyautogui.mouseUp()
+        _pinch_held = False
+        _pinch_start_time = None
+
 def perform_action(action, landmarks, w, h):
     """Map recognized gesture to system action."""
-    global _cursor_smooth
+    global _cursor_smooth, _pinch_held, _pinch_start_time
 
     now = time.time()
     cooldown = _last_action_time.get(action, 0)
 
+    # Pinch: press-and-hold mouse on first frame; release happens when gesture ends
+    if action == "Pinch Action":
+        if not _pinch_held:
+            _pinch_start_time = now
+            pyautogui.mouseDown()
+            _pinch_held = True
+        return  # keep holding while pinch continues
+
+    # Any non-pinch gesture: release the held mouse button
+    if _pinch_held:
+        pyautogui.mouseUp()
+        _pinch_held = False
+        _pinch_start_time = None
+        # mouseDown+mouseUp from a quick pinch already behaves as a click
+
     if action == "Move Cursor":
-        # Index fingertip guides cursor
         ix = int(landmarks[8].x * w)
         iy = int(landmarks[8].y * h)
         screen_w, screen_h = pyautogui.size()
         sx = int(np.interp(ix, [0, w], [0, screen_w]))
         sy = int(np.interp(iy, [0, h], [0, screen_h]))
-        # Smoothing
         _cursor_smooth[0] += (sx - _cursor_smooth[0]) * 0.2
         _cursor_smooth[1] += (sy - _cursor_smooth[1]) * 0.2
         pyautogui.moveTo(int(_cursor_smooth[0]), int(_cursor_smooth[1]))
 
-    elif action == "Click" and now - cooldown > 1.0:
-        pyautogui.click()
+    elif action == "Scroll Up" and now - cooldown > 0.3:
+        pyautogui.scroll(3)
+        _last_action_time[action] = now
+
+    elif action == "Scroll Down" and now - cooldown > 0.3:
+        pyautogui.scroll(-3)
         _last_action_time[action] = now
 
     elif action == "Volume Up" and now - cooldown > 1.5:
         pyautogui.press('volumeup')
-        _last_action_time[action] = now
-
-    elif action == "Screenshot" and now - cooldown > 2.0:
-        pyautogui.hotkey('win', 'prtsc')
         _last_action_time[action] = now
 
     elif action == "Next Slide" and now - cooldown > 1.5:
@@ -219,14 +248,6 @@ def perform_action(action, landmarks, w, h):
 
     elif action == "Previous Slide" and now - cooldown > 1.5:
         pyautogui.press('left')
-        _last_action_time[action] = now
-
-    elif action == "Scroll Down" and now - cooldown > 0.3:
-        pyautogui.scroll(-3)
-        _last_action_time[action] = now
-
-    elif action == "Scroll Up" and now - cooldown > 0.3:
-        pyautogui.scroll(3)
         _last_action_time[action] = now
 
     elif action == "Pause / Play" and now - cooldown > 1.5:
@@ -304,10 +325,11 @@ def gesture_map():
     gesture_map_data = [
         {"gesture": "Open Palm", "fingers": "All 5 fingers open", "action": "Pause / Play Media", "icon": "✋"},
         {"gesture": "Pointing", "fingers": "Index finger only", "action": "Move Cursor", "icon": "☝️"},
-        {"gesture": "Pinch", "fingers": "Thumb + Index close", "action": "Mouse Click", "icon": "🤏"},
+        {"gesture": "Pinch", "fingers": "Thumb + Index close (quick)", "action": "Mouse Click", "icon": "🤏"},
+        {"gesture": "Pinch & Hold", "fingers": "Thumb + Index close (hold)", "action": "Click & Hold (Drag)", "icon": "🤏"},
         {"gesture": "Thumbs Up", "fingers": "Thumb only up", "action": "Volume Up", "icon": "👍"},
-        {"gesture": "Peace Sign", "fingers": "Index + Middle up", "action": "Screenshot", "icon": "✌️"},
-        {"gesture": "Three Fingers", "fingers": "Index + Middle + Ring", "action": "Next Slide →", "icon": "🖖"},
+        {"gesture": "Peace Sign", "fingers": "Index + Middle up", "action": "Scroll Up", "icon": "✌️"},
+        {"gesture": "Three Fingers", "fingers": "Index + Middle + Ring", "action": "Scroll Down", "icon": "🖖"},
         {"gesture": "Four Fingers", "fingers": "All except thumb", "action": "Previous Slide ←", "icon": "🖐"},
         {"gesture": "Rock Sign", "fingers": "Index + Pinky up", "action": "Scroll Down", "icon": "🤘"},
         {"gesture": "Call Sign", "fingers": "Thumb + Pinky up", "action": "Scroll Up", "icon": "🤙"},
